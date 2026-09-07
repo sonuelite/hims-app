@@ -5,11 +5,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, CalendarDays, FileText, Video, User } from 'lucide-react-native';
 
 import { Colors } from '../constants/theme';
-import Appointments from '../screens/patient/appointments/Appointments';
-import Records from '../screens/patient/records/Records';
-import Consult from '../screens/patient/consult/Consult';
-import Profile from '../screens/patient/profile/Profile';
-import HomeScreen from '../screens/patient/home/HomeScreen';
+import Appointments from '../screens/patient/appointments/PatientAppointmentsScreen';
+import Records from '../screens/patient/records/PatientRecordsScreen';
+import Consult from '../screens/patient/consult/PatientConsultScreen';
+import Profile from '../screens/patient/profile/PatientProfileScreen';
+import HomeScreen from '../screens/patient/home/PatientHomeScreen';
 
 const Tab = createBottomTabNavigator();
 

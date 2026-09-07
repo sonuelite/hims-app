@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // import SplashScreen from './src/screens/auth/splashScreen/SplashScreen';
 // import Signup from './src/screens/auth/signup/Signup';
 import StackNavigator from './src/navigator/StackNavigator';
+import { AppProvider } from './src/context/AppContext';
 
 
 // const Stack = createNativeStackNavigator();
@@ -15,27 +16,11 @@ import StackNavigator from './src/navigator/StackNavigator';
 const App = () => {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        {/* <Stack.Navigator initialRouteName='SplashScreen' screenOptions={{ headerShown: false }}>
-          <Stack.Screen
-            name="SplashScreen"
-            component={SplashScreen}
-          />
-          <Stack.Screen
-            name="Welcome"
-            component={Welcome}
-          />
-          <Stack.Screen
-            name="LoginScreen"
-            component={LoginScreen}
-          />
-          <Stack.Screen
-            name="Signup"
-            component={Signup}
-          />
-        </Stack.Navigator> */}
-        <StackNavigator/>
-      </NavigationContainer>
+      <AppProvider>
+        <NavigationContainer>
+          <StackNavigator />
+        </NavigationContainer>
+      </AppProvider>
     </SafeAreaProvider>
   );
 };
