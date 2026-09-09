@@ -30,20 +30,20 @@ const AdminBottomTabNavigator = () => {
       screenOptions={{
         headerShown: false,
 
-        tabBarActiveTintColor: Colors.primary[600],
-        tabBarInactiveTintColor: Colors.neutral[400],
+        // tabBarActiveTintColor: Colors.primary[600],
+        // tabBarInactiveTintColor: Colors.neutral[400],
 
-        tabBarStyle: {
-          backgroundColor: Colors.neutral[0],
-          borderTopColor: Colors.neutral[100],
-          height: 60,
-          paddingBottom: 8,
-        },
+        // tabBarStyle: {
+        //   backgroundColor: Colors.neutral[0],
+        //   borderTopColor: Colors.neutral[100],
+        //   height: 60,
+        //   paddingBottom: 8,
+        // },
 
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-        },
+        // tabBarLabelStyle: {
+        //   fontSize: 11,
+        //   fontWeight: '600',
+        // },
       }}
     >
       <Tab.Screen

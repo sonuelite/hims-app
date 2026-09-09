@@ -918,11 +918,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
+    // justifyContent: 'space-between',
     marginBottom: Spacing.md,
   },
 
   statTileWrap: {
-    width: '48%',
+    // width: '48%',
+    // backgroundColor: 'red'
   },
 
   overviewRow: {
@@ -949,8 +951,8 @@ const styles = StyleSheet.create({
   },
 
   ringRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    // flexDirection: 'row',
+    // alignItems: 'center',
     gap: Spacing.md,
   },
 

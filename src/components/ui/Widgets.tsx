@@ -15,6 +15,7 @@ import {
   Shadows,
   ShadowKey,
 } from '../../constants/theme';
+import { scale } from '../../utils/scale';
 
 interface StatTileProps {
   label: string;
@@ -466,12 +467,18 @@ const styles = StyleSheet.create({
   tile: {
     backgroundColor: Colors.neutral[0],
     borderRadius: Radius.lg,
-    padding: Spacing.base,
+    // padding: Spacing.base,
+    // width: scale(158),
+    // height: scale(158),
+    width: scale(165),
+    height: scale(165),
+    paddingVertical: Spacing.base,
+    alignItems: 'center',
     ...Shadows.md,
   },
 
   tileLg: {
-    padding: Spacing.lg,
+    // padding: Spacing.lg,
   },
 
   topRow: {
