@@ -7,6 +7,7 @@ import LoginScreen from '../screens/auth/signIn/LoginScreen';
 import Signup from '../screens/auth/signup/Signup';
 import BottomTabNavigator from './BottomTabNavigator';
 import Otp from '../screens/auth/otp/Otp';
+import AdminBottomTabNavigator from './AdminBottomTabNavigator';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +38,10 @@ const StackNavigator = () => {
             <Stack.Screen
                 name="PatientTabs"
                 component={BottomTabNavigator}
+            />
+            <Stack.Screen
+                name="AdminTabs"
+                component={AdminBottomTabNavigator}
             />
         </Stack.Navigator>
     )
