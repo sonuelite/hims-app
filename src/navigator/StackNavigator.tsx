@@ -8,6 +8,13 @@ import Signup from '../screens/auth/signup/Signup';
 import BottomTabNavigator from './BottomTabNavigator';
 import Otp from '../screens/auth/otp/Otp';
 import AdminBottomTabNavigator from './AdminBottomTabNavigator';
+import PatientOnboardingScreen from '../screens/admin/patientOnboardScreen/PatientOnboardingScreen';
+import Nursing from '../screens/admin/nursing/Nursing';
+import HouseKeeping from '../screens/admin/houseKeeping/HouseKeeping';
+import PharmacyOPD from '../screens/admin/pharmacyOPD/PharmacyOPD';
+import PharmacyIPD from '../screens/admin/pharmacyIPD/PharmacyIPD';
+import Inventory from '../screens/admin/inventory/Inventory';
+import Hr from '../screens/admin/hr/Hr';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +50,35 @@ const StackNavigator = () => {
                 name="AdminTabs"
                 component={AdminBottomTabNavigator}
             />
+            <Stack.Screen
+                name="PatientOnboardingScreen"
+                component={PatientOnboardingScreen}
+            />
+            <Stack.Screen
+                name="Nursing"
+                component={Nursing}
+            />
+            <Stack.Screen
+                name="HouseKeeping"
+                component={HouseKeeping}
+            />
+            <Stack.Screen
+                name="PharmacyOPD"
+                component={PharmacyOPD}
+            />
+            <Stack.Screen
+                name="PharmacyIPD"
+                component={PharmacyIPD}
+            />
+            <Stack.Screen
+                name="Inventory"
+                component={Inventory}
+            />
+            <Stack.Screen
+                name="Hr"
+                component={Hr}
+            />
+
         </Stack.Navigator>
     )
 }

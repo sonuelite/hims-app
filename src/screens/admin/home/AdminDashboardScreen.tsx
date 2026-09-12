@@ -136,6 +136,45 @@ const AdminDashboardScreen = () => {
     navigation.navigate(screenName);
   };
 
+  const adminType = [
+    {
+      title: 'Nursing',
+      icon: <Users size={20} color="#fff" />,
+      boxColor: Colors.success[600],
+      screen: 'Nursing',
+    },
+    {
+      title: 'HouseKeeping',
+      icon: <Users size={20} color="#fff" />,
+      boxColor: Colors.primary[600],
+      screen: 'HouseKeeping',
+    },
+    {
+      title: 'Pharmacy OPD',
+      icon: <Users size={20} color="#fff" />,
+      boxColor: Colors.warning[600],
+      screen: 'PharmacyOPD',
+    },
+    {
+      title: 'Pharmacy IPD',
+      icon: <Users size={20} color="#fff" />,
+      boxColor: Colors.accent[600],
+      screen: 'PharmacyIPD',
+    },
+    {
+      title: 'Inventory',
+      icon: <Users size={20} color="#fff" />,
+      boxColor: Colors.success[600],
+      screen: 'Inventory',
+    },
+    {
+      title: 'Hr',
+      icon: <Users size={20} color="#fff" />,
+      boxColor: Colors.primary[600],
+      screen: 'Hr',
+    },
+  ];
+
   const stats = [
     {
       label: 'Total Patients',
@@ -314,11 +353,11 @@ const AdminDashboardScreen = () => {
 
         <View style={styles.body}>
           {/* Quick Actions */}
-          <View style={styles.quickActions}>
+          {/* <View style={styles.quickActions}>
             <TouchableOpacity
               style={styles.quickActionBtn}
               onPress={() =>
-                navigateTo('PatientOnboarding')
+                navigateTo('PatientOnboardingScreen')
               }
               activeOpacity={0.8}
             >
@@ -422,7 +461,7 @@ const AdminDashboardScreen = () => {
                 Patients
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           {/* Key Stats */}
           <View style={styles.statsGrid}>
@@ -441,6 +480,141 @@ const AdminDashboardScreen = () => {
                   }
                 />
               </View>
+            ))}
+          </View>
+
+          {/* <View style={styles.quickActions}>
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() =>
+                navigateTo('PatientOnboardingScreen')
+              }
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  {
+                    backgroundColor:
+                      Colors.success[600],
+                  },
+                ]}
+              >
+                <UserPlus
+                  size={20}
+                  color="#fff"
+                />
+              </View>
+
+              <Text style={styles.quickActionText}>
+                Nursing
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() =>
+                navigateTo('OPDRegistration')
+              }
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  {
+                    backgroundColor:
+                      Colors.primary[600],
+                  },
+                ]}
+              >
+                <CalendarPlus
+                  size={20}
+                  color="#fff"
+                />
+              </View>
+
+              <Text style={styles.quickActionText}>
+                HouseKeeping
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() =>
+                navigateTo('IPDAdmission')
+              }
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  {
+                    backgroundColor:
+                      Colors.warning[600],
+                  },
+                ]}
+              >
+                <BedDouble
+                  size={20}
+                  color="#fff"
+                />
+              </View>
+
+              <Text style={styles.quickActionText}>
+                Pharmacy OPD
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() =>
+                navigateTo('Patients')
+              }
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  {
+                    backgroundColor:
+                      Colors.accent[600],
+                  },
+                ]}
+              >
+                <Users
+                  size={20}
+                  color="#fff"
+                />
+              </View>
+
+              <Text style={styles.quickActionText}>
+                Pharmacy IPD
+              </Text>
+            </TouchableOpacity>
+          </View> */}
+          <View style={styles.quickActions}>
+            {adminType.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.quickActionBtn}
+                onPress={() => navigateTo(item.screen)}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.quickActionIcon,
+                    {
+                      backgroundColor: item.boxColor,
+                    },
+                  ]}
+                >
+                  {item.icon}
+                </View>
+
+                <Text style={styles.quickActionText}>
+                  {item.title}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
 
@@ -465,8 +639,8 @@ const AdminDashboardScreen = () => {
                     bedOccupancyRate > 80
                       ? Colors.error[500]
                       : bedOccupancyRate > 60
-                      ? Colors.warning[500]
-                      : Colors.success[500]
+                        ? Colors.warning[500]
+                        : Colors.success[500]
                   }
                   label={`${bedOccupancyRate}%`}
                 />
@@ -520,12 +694,12 @@ const AdminDashboardScreen = () => {
                         {
                           backgroundColor:
                             stat.color ===
-                            'success'
+                              'success'
                               ? Colors.success[50]
                               : stat.color ===
                                 'error'
-                              ? Colors.error[50]
-                              : Colors.warning[50],
+                                ? Colors.error[50]
+                                : Colors.warning[50],
                         },
                       ]}
                     >
@@ -682,10 +856,10 @@ const AdminDashboardScreen = () => {
                         index === 0
                           ? Colors.primary[600]
                           : index === 1
-                          ? Colors.success[600]
-                          : index === 2
-                          ? Colors.accent[600]
-                          : Colors.teal[600]
+                            ? Colors.success[600]
+                            : index === 2
+                              ? Colors.accent[600]
+                              : Colors.teal[600]
                       }
                     />
                   ),
@@ -886,16 +1060,28 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
   },
 
-  quickActions: {
+  // quickActions: {
+  //   flexDirection: 'row',
+  //   gap: Spacing.sm,
+  //   marginBottom: Spacing.md,
+  // },
+    quickActions: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    // gap: Spacing.sm,
+    // marginBottom: Spacing.md,
   },
 
-  quickActionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.xs,
+  // quickActionBtn: {
+  //   flex: 1,
+  //   alignItems: 'center',
+  //   gap: Spacing.xs,
+  // },
+    quickActionBtn: {
+  width: '31%',
+  alignItems: 'center',
+  marginBottom: Spacing.md,
   },
 
   quickActionIcon: {

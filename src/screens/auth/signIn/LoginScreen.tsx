@@ -46,6 +46,10 @@ import { scale } from '../../../utils/scale';
 import BackHeader from '../../../components/backHeader/BackHeader';
 import Divider from '../../../components/divider/Divider';
 import { loginUser } from '../../../network/api';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
+import { setAccessToken } from '../../../store/reducer/auth/authSlice';
+// import { setAccessToken } from '../../../store/authSlice';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -80,9 +84,10 @@ export default function LoginScreen() {
     }
   };
 
+  const dispatch = useDispatch();
   // const handleLogin = async() => {
   //   console.log("In handleLogin");
-    
+
   //   if (mode === 'email' && !email) {
   //     showToast('Please enter your email', 'error');
   //     return;
@@ -113,7 +118,7 @@ export default function LoginScreen() {
   //   // navigateAfterLogin();
   //     if (mode === 'email') {
   //       console.log("In mode === email");
-        
+
   //   try {
   //     const response = await loginUser({
   //       encryptedEmail: email,
@@ -142,75 +147,84 @@ export default function LoginScreen() {
   // --------------------------------------------------
 
   const handleLogin = async () => {
-  console.log('In handleLogin');
+    console.log('In handleLogin');
 
-  if (mode === 'email' && !email) {
-    showToast('Please enter your email', 'error');
-    return;
-  }
-
-  if (mode === 'mobile' && !mobile) {
-    showToast('Please enter your mobile number', 'error');
-    return;
-  }
-
-  if (!password && !showOTP && mode === 'email') {
-    showToast('Please enter your password', 'error');
-    return;
-  }
-
-  // OTP verification
-  if (showOTP) {
-    if (otp.length !== 4) {
-      showToast('Please enter the 4-digit OTP', 'error');
+    if (mode === 'email' && !email) {
+      showToast('Please enter your email', 'error');
       return;
     }
 
-    showToast('Login successful!', 'success');
-    navigateAfterLogin();
-    return;
-  }
+    if (mode === 'mobile' && !mobile) {
+      showToast('Please enter your mobile number', 'error');
+      return;
+    }
 
-  // Email login
-  if (mode === 'email') {
-    console.log('In mode === email');
+    if (!password && !showOTP && mode === 'email') {
+      showToast('Please enter your password', 'error');
+      return;
+    }
 
-    try {
-      // Same encryption as Angular web application
-      const encryptedEmail = CryptoJS.AES.encrypt(
-        email,
-        'email'
-      ).toString();
-
-      const encryptedPassword = CryptoJS.AES.encrypt(
-        password,
-        'password'
-      ).toString();
-
-      console.log('Encrypted Email:', encryptedEmail);
-      console.log('Encrypted Password:', encryptedPassword);
-
-      const response = await loginUser({
-        encryptedEmail,
-        encryptedPassword,
-      });
-
-      console.log('LOGIN RESPONSE:', response);
+    // OTP verification
+    if (showOTP) {
+      if (otp.length !== 4) {
+        showToast('Please enter the 4-digit OTP', 'error');
+        return;
+      }
 
       showToast('Login successful!', 'success');
-
       navigateAfterLogin();
-
-    } catch (error: any) {
-      console.log('LOGIN ERROR:', error);
-
-      showToast(
-        error?.response?.data?.message || 'Login failed',
-        'error'
-      );
+      return;
     }
-  }
-};
+
+    // Email login
+    if (mode === 'email') {
+      console.log('In mode === email');
+
+      try {
+        // Same encryption as Angular web application
+        const encryptedEmail = CryptoJS.AES.encrypt(
+          email,
+          'email'
+        ).toString();
+
+        const encryptedPassword = CryptoJS.AES.encrypt(
+          password,
+          'password'
+        ).toString();
+
+        console.log('Encrypted Email:', encryptedEmail);
+        console.log('Encrypted Password:', encryptedPassword);
+
+        const response = await loginUser({
+          encryptedEmail,
+          encryptedPassword,
+        });
+
+        console.log('LOGIN RESPONSE:', response);
+
+        // showToast('Login successful!', 'success');
+
+
+        const accessToken = response?.accessToken;
+        if (accessToken) {
+          dispatch(setAccessToken(accessToken));
+
+          console.log('Access token saved in Redux');
+
+          // navigation.replace('PatientTabs');
+          navigateAfterLogin();
+        }
+
+      } catch (error: any) {
+        console.log('LOGIN ERROR:', error);
+
+        showToast(
+          error?.response?.data?.message || 'Login failed',
+          'error'
+        );
+      }
+    }
+  };
 
   const handleSendOTP = () => {
     if (!mobile) {
@@ -241,8 +255,8 @@ export default function LoginScreen() {
       >
 
         <View style={styles.logoRow}>
-        <Image source={require('../../../assets/image/himsLogo.png')}
-          style={styles.himsLogoStyle}
+          <Image source={require('../../../assets/image/himsLogo.png')}
+            style={styles.himsLogoStyle}
           />
           {/* <View style={styles.iconCircle}>
             <HeartPulse
