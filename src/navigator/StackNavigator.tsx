@@ -1,4 +1,3 @@
-import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import SplashScreen from '../screens/auth/splashScreen/SplashScreen';
@@ -15,6 +14,7 @@ import PharmacyOPD from '../screens/admin/pharmacyOPD/PharmacyOPD';
 import PharmacyIPD from '../screens/admin/pharmacyIPD/PharmacyIPD';
 import Inventory from '../screens/admin/inventory/Inventory';
 import Hr from '../screens/admin/hr/Hr';
+import NurseTabNavigator from './bottomTabs/NurseTabNavigator';
 
 const Stack = createNativeStackNavigator();
 
@@ -59,6 +59,10 @@ const StackNavigator = () => {
                 component={Nursing}
             />
             <Stack.Screen
+                name="NurseTabNavigator"
+                component={NurseTabNavigator}
+            />
+            <Stack.Screen
                 name="HouseKeeping"
                 component={HouseKeeping}
             />
@@ -84,5 +88,3 @@ const StackNavigator = () => {
 }
 
 export default StackNavigator
-
-const styles = StyleSheet.create({})
