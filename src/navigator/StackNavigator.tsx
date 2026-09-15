@@ -9,6 +9,7 @@ import Otp from '../screens/auth/otp/Otp';
 import AdminBottomTabNavigator from './AdminBottomTabNavigator';
 import PatientOnboardingScreen from '../screens/admin/patientOnboardScreen/PatientOnboardingScreen';
 import Nursing from '../screens/admin/nursing/Nursing';
+import StaffIdScreen from '../screens/admin/nursing/StaffIdScreen';
 import HouseKeeping from '../screens/admin/houseKeeping/HouseKeeping';
 import PharmacyOPD from '../screens/admin/pharmacyOPD/PharmacyOPD';
 import PharmacyIPD from '../screens/admin/pharmacyIPD/PharmacyIPD';
@@ -57,6 +58,10 @@ const StackNavigator = () => {
             <Stack.Screen
                 name="Nursing"
                 component={Nursing}
+            />
+            <Stack.Screen
+                name="StaffIdScreen"
+                component={StaffIdScreen}
             />
             <Stack.Screen
                 name="NurseTabNavigator"

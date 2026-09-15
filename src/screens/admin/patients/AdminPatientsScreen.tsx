@@ -116,7 +116,7 @@ const AdminPatientsScreen = () => {
             ]}
             onPress={() =>
               navigation.navigate(
-                'PatientOnboarding',
+                'PatientOnboardingScreen',
               )
             }
             activeOpacity={0.8}

@@ -1,3 +1,5 @@
+import { Fontconstants } from '../../constants/fontConstants';
+import { fontScale } from '../../utils/scale';
 import { Colors, FontWeight } from '../../constants/theme';
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -22,13 +24,17 @@ const NurseTabNavigator = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.teal[600],
+        tabBarActiveTintColor: Colors.primary[600],
         tabBarInactiveTintColor: Colors.neutral[400],
         tabBarStyle: {
           backgroundColor: Colors.neutral[0],
           borderTopColor: Colors.neutral[200],
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: FontWeight.semibold },
+        tabBarLabelStyle: {
+          fontFamily: Fontconstants.SEMIBOLD,
+          fontSize: fontScale(11),
+          fontWeight: FontWeight.semibold,
+        },
       }}
     >
       <Tab.Screen

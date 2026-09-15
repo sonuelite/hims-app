@@ -29,15 +29,14 @@ import {
   ScanLine,
   CheckCircle,
   Shield,
+  FileUp,
+  FileText,
 } from 'lucide-react-native';
 
 import { useApp } from '../../../context/AppContext';
 import type { Patient } from '../../../types';
 
-import {
-  createPatient,
-  getAllActiveCountry,
-} from '../../../network/api';
+import { createPatient, getAllActiveCountry } from '../../../network/api';
 
 import CustomButton from '../../../components/customButton/CustomButton';
 import { scale } from '../../../utils/scale';
@@ -47,6 +46,7 @@ import CustomDropdown from '../../../components/customDropdown/CustomDropdown';
 
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../store/store';
+import { pick, types, isCancel } from '@react-native-documents/picker';
 
 type RootStackParamList = {
   PatientOnboarding: undefined;
@@ -56,12 +56,12 @@ type RootStackParamList = {
   };
 };
 
-type NavigationProp =
-  NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const GENDERS = ['Male', 'Female', 'Other'] as const;
 
 const TITLE_OPTIONS = ['Mr', 'Ms', 'Mrs'];
+const PANEL_OPTIONS = ['Yes', 'No'];
 
 interface Country {
   country_code?: string;
@@ -82,38 +82,27 @@ export default function PatientOnboardingScreen() {
   /*
    * Get access token from Redux
    */
-  const accessToken = useSelector(
-    (state: RootState) => state.auth.accessToken,
-  );
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
 
-  console.log(
-    'accessTokenFromRedux-->',
-    accessToken,
-  );
+  console.log('accessTokenFromRedux-->', accessToken);
 
-  const [mode, setMode] =
-    useState<'manual' | 'abha'>('manual');
+  const [mode, setMode] = useState<'manual' | 'abha'>('manual');
 
   const [abhaNumber, setAbhaNumber] = useState('');
-  const [abhaVerifying, setAbhaVerifying] =
-    useState(false);
-  const [abhaVerified, setAbhaVerified] =
-    useState(false);
+  const [abhaVerifying, setAbhaVerifying] = useState(false);
+  const [abhaVerified, setAbhaVerified] = useState(false);
 
-  const [abhaData, setAbhaData] =
-    useState<Partial<Patient> | null>(null);
+  const [abhaData, setAbhaData] = useState<Partial<Patient> | null>(null);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dob, setDob] = useState('');
 
-  const [gender, setGender] =
-    useState<'Male' | 'Female' | 'Other'>('Male');
+  const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Male');
 
   const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
-  const [bloodGroup, setBloodGroup] =
-    useState('O+');
+  const [bloodGroup, setBloodGroup] = useState('O+');
 
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -124,15 +113,27 @@ export default function PatientOnboardingScreen() {
   const [phone, setPhone] = useState('');
 
   const [title, setTitle] = useState('Mr');
+  const [panelVal, setPanelVal] = useState('');
+  const [selectedPdf, setSelectedPdf] = useState<{
+    uri: string;
+    name: string | null;
+    type: string | null;
+    size: number | null;
+  } | null>(null);
+
+  const [selectedConsentPdf, setSelectedConsentPdf] = useState<{
+    uri: string;
+    name: string | null;
+    type: string | null;
+    size: number | null;
+  } | null>(null);
 
   /*
    * Country state
    */
   const [country, setCountry] = useState('');
-  const [countries, setCountries] =
-    useState<Country[]>([]);
-  const [countryLoading, setCountryLoading] =
-    useState(false);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countryLoading, setCountryLoading] = useState(false);
   const [countryId, setCountryId] = useState('');
 
   /*
@@ -146,10 +147,7 @@ export default function PatientOnboardingScreen() {
    */
   const countryOptions = countries
     .map(item => item.countryss_name)
-    .filter(
-      (name): name is string =>
-        Boolean(name),
-    );
+    .filter((name): name is string => Boolean(name));
 
   /*
    * Calculate patient age
@@ -165,23 +163,11 @@ export default function PatientOnboardingScreen() {
     const month = parseInt(parts[1], 10);
     const day = parseInt(parts[2], 10);
 
-    const birth = new Date(
-      year,
-      month - 1,
-      day,
-    );
+    const birth = new Date(year, month - 1, day);
 
-    const diff =
-      Date.now() - birth.getTime();
+    const diff = Date.now() - birth.getTime();
 
-    return Math.floor(
-      diff /
-        (365.25 *
-          24 *
-          60 *
-          60 *
-          1000),
-    );
+    return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
   };
 
   /*
@@ -189,9 +175,7 @@ export default function PatientOnboardingScreen() {
    */
   useEffect(() => {
     if (!accessToken) {
-      console.log(
-        'Access token not available yet',
-      );
+      console.log('Access token not available yet');
       return;
     }
 
@@ -207,20 +191,11 @@ export default function PatientOnboardingScreen() {
       /*
        * Use access token directly from Redux
        */
-      console.log(
-        'Access token -->',
-        accessToken,
-      );
+      console.log('Access token -->', accessToken);
 
-      const response =
-        await getAllActiveCountry(
-          accessToken || '',
-        );
+      const response = await getAllActiveCountry(accessToken || '');
 
-      console.log(
-        'Country API Response:',
-        response,
-      );
+      console.log('Country API Response:', response);
 
       /*
        * Your API response is:
@@ -237,8 +212,7 @@ export default function PatientOnboardingScreen() {
        * }
        */
 
-      const countryList =
-        response?.data || [];
+      const countryList = response?.data || [];
 
       if (Array.isArray(countryList)) {
         setCountries(countryList);
@@ -248,16 +222,12 @@ export default function PatientOnboardingScreen() {
     } catch (error: any) {
       console.log(
         'Country Load Error:',
-        error?.response?.data ||
-          error?.message,
+        error?.response?.data || error?.message,
       );
 
       setCountries([]);
 
-      showToast(
-        'Failed to load countries',
-        'error',
-      );
+      showToast('Failed to load countries', 'error');
     } finally {
       setCountryLoading(false);
     }
@@ -268,10 +238,7 @@ export default function PatientOnboardingScreen() {
    */
   const verifyAbha = () => {
     if (abhaNumber.length < 14) {
-      showToast(
-        'ABHA number must be 14 digits',
-        'error',
-      );
+      showToast('ABHA number must be 14 digits', 'error');
 
       return;
     }
@@ -298,38 +265,21 @@ export default function PatientOnboardingScreen() {
 
       setDob(mockData.dob || '');
 
-      setGender(
-        mockData.gender || 'Male',
-      );
+      setGender(mockData.gender || 'Male');
 
-      setMobile(
-        mockData.mobile || '',
-      );
+      setMobile(mockData.mobile || '');
 
-      setEmail(
-        mockData.email || '',
-      );
+      setEmail(mockData.email || '');
 
-      setBloodGroup(
-        mockData.bloodGroup || 'O+',
-      );
+      setBloodGroup(mockData.bloodGroup || 'O+');
 
-      setAddress(
-        mockData.address || '',
-      );
+      setAddress(mockData.address || '');
 
-      setCity(
-        mockData.city || '',
-      );
+      setCity(mockData.city || '');
 
-      setState(
-        mockData.state || '',
-      );
+      setState(mockData.state || '');
 
-      showToast(
-        'ABHA verified successfully',
-        'success',
-      );
+      showToast('ABHA verified successfully', 'success');
     }, 1500);
   };
 
@@ -419,20 +369,11 @@ export default function PatientOnboardingScreen() {
         ],
       };
 
-      console.log(
-        'Create Patient Data:',
-        patientData,
-      );
+      console.log('Create Patient Data:', patientData);
 
-      const result =
-        await createPatient(
-          patientData,
-        );
+      const result = await createPatient(patientData);
 
-      console.log(
-        'Patient Created:',
-        result,
-      );
+      console.log('Patient Created:', result);
 
       showToast(
         `Patient ${firstName} ${lastName} registered successfully`,
@@ -446,18 +387,14 @@ export default function PatientOnboardingScreen() {
         result?.data?.patientId;
 
       if (patientId) {
-        navigation.replace(
-          'PatientDetail',
-          {
-            patientId: String(patientId),
-          },
-        );
+        navigation.replace('PatientDetail', {
+          patientId: String(patientId),
+        });
       }
     } catch (error: any) {
       console.log(
         'Create Patient Error:',
-        error?.response?.data ||
-          error?.message,
+        error?.response?.data || error?.message,
       );
 
       showToast(
@@ -469,48 +406,90 @@ export default function PatientOnboardingScreen() {
     }
   };
 
+  const handlePdfUpload = async () => {
+    try {
+      const [file] = await pick({
+        type: [types.pdf],
+        allowMultiSelection: false,
+      });
+
+      console.log('Selected PDF:', file);
+
+      setSelectedPdf({
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
+
+      showToast('PDF selected successfully', 'success');
+    } catch (error) {
+      if (isCancel(error)) {
+        console.log('PDF selection cancelled');
+        return;
+      }
+
+      console.log('PDF Picker Error:', error);
+      showToast('Failed to select PDF', 'error');
+    }
+  };
+
+  const handleConsentUpload = async () => {
+    try {
+      const [file] = await pick({
+        type: [types.pdf],
+        allowMultiSelection: false,
+      });
+
+      console.log('Selected Consent PDF:', file);
+
+      setSelectedConsentPdf({
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
+
+      showToast('Consent PDF selected successfully', 'success');
+    } catch (error) {
+      if (isCancel(error)) {
+        console.log('Consent PDF selection cancelled');
+        return;
+      }
+
+      console.log('Consent PDF Picker Error:', error);
+      showToast('Failed to select consent PDF', 'error');
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <ScreenHeader
-        title="Patient Onboarding"
-        showBack
-      />
+      <ScreenHeader title="Patient Onboarding" showBack />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={
-          styles.scrollContent
-        }
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Mode Selector */}
 
         <View style={styles.modeRow}>
           <TouchableOpacity
-            style={[
-              styles.modeBtn,
-              mode === 'manual' &&
-                styles.modeBtnActive,
-            ]}
-            onPress={() =>
-              setMode('manual')
-            }
+            style={[styles.modeBtn, mode === 'manual' && styles.modeBtnActive]}
+            onPress={() => setMode('manual')}
             activeOpacity={0.8}
           >
             <UserPlus
               size={20}
               color={
-                mode === 'manual'
-                  ? Colors.primary[700]
-                  : Colors.neutral[400]
+                mode === 'manual' ? Colors.primary[700] : Colors.neutral[400]
               }
             />
 
             <Text
               style={[
                 styles.modeText,
-                mode === 'manual' &&
-                  styles.modeTextActive,
+                mode === 'manual' && styles.modeTextActive,
               ]}
             >
               Manual Entry
@@ -518,30 +497,21 @@ export default function PatientOnboardingScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.modeBtn,
-              mode === 'abha' &&
-                styles.modeBtnActive,
-            ]}
-            onPress={() =>
-              setMode('abha')
-            }
+            style={[styles.modeBtn, mode === 'abha' && styles.modeBtnActive]}
+            onPress={() => setMode('abha')}
             activeOpacity={0.8}
           >
             <Shield
               size={20}
               color={
-                mode === 'abha'
-                  ? Colors.primary[700]
-                  : Colors.neutral[400]
+                mode === 'abha' ? Colors.primary[700] : Colors.neutral[400]
               }
             />
 
             <Text
               style={[
                 styles.modeText,
-                mode === 'abha' &&
-                  styles.modeTextActive,
+                mode === 'abha' && styles.modeTextActive,
               ]}
             >
               ABHA
@@ -553,34 +523,16 @@ export default function PatientOnboardingScreen() {
 
         {mode === 'abha' && (
           <Card style={styles.abhaCard}>
-            <View
-              style={styles.abhaHeader}
-            >
-              <Shield
-                size={24}
-                color={
-                  Colors.success[600]
-                }
-              />
+            <View style={styles.abhaHeader}>
+              <Shield size={24} color={Colors.success[600]} />
 
-              <View
-                style={
-                  styles.abhaHeaderText
-                }
-              >
-                <Text
-                  style={styles.abhaTitle}
-                >
-                  Ayushman Bharat Health
-                  Account
+              <View style={styles.abhaHeaderText}>
+                <Text style={styles.abhaTitle}>
+                  Ayushman Bharat Health Account
                 </Text>
 
-                <Text
-                  style={styles.abhaSub}
-                >
-                  Enter the 14-digit ABHA
-                  number to auto-fill
-                  patient details
+                <Text style={styles.abhaSub}>
+                  Enter the 14-digit ABHA number to auto-fill patient details
                 </Text>
               </View>
             </View>
@@ -589,72 +541,35 @@ export default function PatientOnboardingScreen() {
               label="ABHA Number"
               value={abhaNumber}
               onChangeText={text => {
-                setAbhaNumber(
-                  text.replace(
-                    /[^0-9]/g,
-                    '',
-                  ),
-                );
+                setAbhaNumber(text.replace(/[^0-9]/g, ''));
 
                 setAbhaVerified(false);
               }}
               placeholder="Enter 14-digit ABHA number"
               keyboardType="numeric"
-              icon={
-                <ScanLine
-                  size={20}
-                  color={
-                    Colors.neutral[400]
-                  }
-                />
-              }
+              icon={<ScanLine size={20} color={Colors.neutral[400]} />}
             />
 
             {abhaVerified && (
-              <View
-                style={
-                  styles.verifiedBox
-                }
-              >
-                <CheckCircle
-                  size={18}
-                  color={
-                    Colors.success[600]
-                  }
-                />
+              <View style={styles.verifiedBox}>
+                <CheckCircle size={18} color={Colors.success[600]} />
 
-                <Text
-                  style={
-                    styles.verifiedText
-                  }
-                >
-                  ABHA verified - Patient
-                  data fetched
+                <Text style={styles.verifiedText}>
+                  ABHA verified - Patient data fetched
                 </Text>
               </View>
             )}
 
             <Button
-              label={
-                abhaVerifying
-                  ? 'Verifying...'
-                  : 'Verify ABHA'
-              }
+              label={abhaVerifying ? 'Verifying...' : 'Verify ABHA'}
               onPress={verifyAbha}
               loading={abhaVerifying}
               disabled={abhaVerified}
-              variant={
-                abhaVerified
-                  ? 'success'
-                  : 'primary'
-              }
+              variant={abhaVerified ? 'success' : 'primary'}
               fullWidth
               icon={
                 abhaVerified ? (
-                  <CheckCircle
-                    size={18}
-                    color="#fff"
-                  />
+                  <CheckCircle size={18} color="#fff" />
                 ) : undefined
               }
             />
@@ -663,11 +578,7 @@ export default function PatientOnboardingScreen() {
 
         {/* Personal Information */}
 
-        <Text
-          style={styles.sectionTitle}
-        >
-          Personal Information
-        </Text>
+        <Text style={styles.sectionTitle}>Personal Information</Text>
 
         <Card style={styles.formCard}>
           <CustomDropdown
@@ -699,25 +610,15 @@ export default function PatientOnboardingScreen() {
             placeholder="e.g. 1990-05-12"
           />
 
-          <Text
-            style={styles.fieldLabel}
-          >
-            Gender
-          </Text>
+          <Text style={styles.fieldLabel}>Gender</Text>
 
-          <View
-            style={styles.chipRow}
-          >
+          <View style={styles.chipRow}>
             {GENDERS.map(item => (
               <Chip
                 key={item}
                 label={item}
-                selected={
-                  gender === item
-                }
-                onPress={() =>
-                  setGender(item)
-                }
+                selected={gender === item}
+                onPress={() => setGender(item)}
               />
             ))}
           </View>
@@ -733,11 +634,7 @@ export default function PatientOnboardingScreen() {
 
         {/* Address */}
 
-        <Text
-          style={styles.sectionTitle}
-        >
-          Address
-        </Text>
+        <Text style={styles.sectionTitle}>Address</Text>
 
         <Card style={styles.formCard}>
           <Input
@@ -765,50 +662,32 @@ export default function PatientOnboardingScreen() {
               /*
                * Set country name
                */
-              setCountry(
-                selectedCountry,
-              );
+              setCountry(selectedCountry);
 
               /*
                * Find complete API object
                */
-              const selectedCountryData =
-                countries.find(
-                  item =>
-                    item.countryss_name ===
-                    selectedCountry,
-                );
+              const selectedCountryData = countries.find(
+                item => item.countryss_name === selectedCountry,
+              );
 
-              if (
-                selectedCountryData
-              ) {
+              if (selectedCountryData) {
                 /*
                  * API field:
                  * countryss_id
                  */
-                const selectedId =
-                  selectedCountryData.countryss_id;
+                const selectedId = selectedCountryData.countryss_id;
 
-                setCountryId(
-                  String(
-                    selectedId ?? '',
-                  ),
-                );
+                setCountryId(String(selectedId ?? ''));
 
-                console.log(
-                  'Selected Country:',
-                  selectedCountryData,
-                );
+                console.log('Selected Country:', selectedCountryData);
 
                 console.log(
                   'Selected Country Name:',
                   selectedCountryData.countryss_name,
                 );
 
-                console.log(
-                  'Selected Country ID:',
-                  selectedId,
-                );
+                console.log('Selected Country ID:', selectedId);
               }
             }}
           />
@@ -845,11 +724,7 @@ export default function PatientOnboardingScreen() {
 
         {/* Contact Details */}
 
-        <Text
-          style={styles.sectionTitle}
-        >
-          Contact Details
-        </Text>
+        <Text style={styles.sectionTitle}>Contact Details</Text>
 
         <Card style={styles.formCard}>
           <Input
@@ -870,6 +745,98 @@ export default function PatientOnboardingScreen() {
           />
         </Card>
 
+        {/* Billing And Panel Details */}
+
+        <Text style={styles.sectionTitle}>Billing And Panel Details</Text>
+
+        <Card style={styles.formCard}>
+          <CustomDropdown
+            label="Panel Required"
+            value={panelVal}
+            options={PANEL_OPTIONS}
+            placeholder="Select "
+            onSelect={setPanelVal}
+          />
+
+          {/* {panelVal === 'Yes' && (
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={handlePdfUpload}
+            >
+              <FileUp size={20} color={Colors.primary[500]} />
+              <Text style={styles.uploadPdfTxt}>Upload PDF</Text>
+            </TouchableOpacity>
+          )} */}
+          {panelVal === 'Yes' && (
+            <>
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={handlePdfUpload}
+                activeOpacity={0.7}
+              >
+                <FileUp size={20} color={Colors.primary[500]} />
+
+                <Text style={styles.uploadPdfTxt}>
+                  {selectedPdf ? 'Change PDF' : 'Upload PDF'}
+                </Text>
+              </TouchableOpacity>
+
+              {selectedPdf && (
+                <View style={styles.selectedPdfContainer}>
+                  <FileText size={18} color={Colors.success[600]} />
+
+                  <View style={styles.pdfInfo}>
+                    <Text style={styles.pdfName} numberOfLines={1}>
+                      {selectedPdf.name}
+                    </Text>
+
+                    {selectedPdf.size != null && (
+                      <Text style={styles.pdfSize}>
+                        {(selectedPdf.size / 1024 / 1024).toFixed(2)} MB
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+        </Card>
+
+        {/* Consent Details */}
+        <Text style={styles.sectionTitle}>Consent Details</Text>
+
+        <Card style={styles.formCard}>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={handleConsentUpload}
+            activeOpacity={0.7}
+          >
+            <FileUp size={20} color={Colors.primary[500]} />
+
+            <Text style={styles.uploadPdfTxt}>
+              {selectedConsentPdf ? 'Change Consent' : 'Upload Consent'}
+            </Text>
+          </TouchableOpacity>
+
+          {selectedConsentPdf && (
+            <View style={styles.selectedPdfContainer}>
+              <FileText size={18} color={Colors.success[600]} />
+
+              <View style={styles.pdfInfo}>
+                <Text style={styles.pdfName} numberOfLines={1}>
+                  {selectedConsentPdf.name}
+                </Text>
+
+                {selectedConsentPdf.size != null && (
+                  <Text style={styles.pdfSize}>
+                    {(selectedConsentPdf.size / 1024 / 1024).toFixed(2)} MB
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+        </Card>
+
         {/* Register */}
 
         <CustomButton
@@ -878,9 +845,7 @@ export default function PatientOnboardingScreen() {
           topHeight={22}
           bgColor={ColorConstants.BTNCOLOR}
           fontsize={14}
-          fontfamily={
-            Fontconstants.SEMIBOLD
-          }
+          fontfamily={Fontconstants.SEMIBOLD}
           bordRadius={scale(12)}
           onPress={handleRegister}
         />
@@ -892,8 +857,7 @@ export default function PatientOnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:
-      Colors.neutral[50],
+    backgroundColor: Colors.neutral[50],
   },
 
   scrollView: {
@@ -917,37 +881,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    paddingVertical:
-      Spacing.md + 2,
+    paddingVertical: Spacing.md + 2,
     borderRadius: Radius.md,
-    backgroundColor:
-      Colors.neutral[0],
+    backgroundColor: Colors.neutral[0],
     borderWidth: 1.5,
-    borderColor:
-      Colors.neutral[200],
+    borderColor: Colors.neutral[200],
     ...Shadows.sm,
   },
 
   modeBtnActive: {
-    borderColor:
-      Colors.primary[500],
-    backgroundColor:
-      Colors.primary[50],
+    borderColor: Colors.primary[500],
+    backgroundColor: Colors.primary[50],
   },
 
   modeText: {
     fontSize: FontSize.base,
-    fontWeight:
-      FontWeight.medium,
-    color:
-      Colors.neutral[500],
+    fontWeight: FontWeight.medium,
+    color: Colors.neutral[500],
   },
 
   modeTextActive: {
-    color:
-      Colors.primary[700],
-    fontWeight:
-      FontWeight.semibold,
+    color: Colors.primary[700],
+    fontWeight: FontWeight.semibold,
   },
 
   abhaCard: {
@@ -967,16 +922,13 @@ const styles = StyleSheet.create({
 
   abhaTitle: {
     fontSize: FontSize.base,
-    fontWeight:
-      FontWeight.bold,
-    color:
-      Colors.neutral[900],
+    fontWeight: FontWeight.bold,
+    color: Colors.neutral[900],
   },
 
   abhaSub: {
     fontSize: FontSize.xs,
-    color:
-      Colors.neutral[400],
+    color: Colors.neutral[400],
     marginTop: 2,
   },
 
@@ -984,30 +936,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor:
-      Colors.success[50],
+    backgroundColor: Colors.success[50],
     borderRadius: Radius.sm,
-    padding:
-      Spacing.sm + 2,
+    padding: Spacing.sm + 2,
     marginBottom: Spacing.md,
   },
 
   verifiedText: {
     fontSize: FontSize.sm,
-    color:
-      Colors.success[700],
-    fontWeight:
-      FontWeight.semibold,
+    color: Colors.success[700],
+    fontWeight: FontWeight.semibold,
   },
 
   sectionTitle: {
     fontSize: FontSize.md,
-    fontWeight:
-      FontWeight.bold,
-    color:
-      Colors.neutral[700],
-    marginBottom:
-      Spacing.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.neutral[700],
+    marginBottom: Spacing.sm,
     marginTop: Spacing.md,
   },
 
@@ -1017,18 +962,52 @@ const styles = StyleSheet.create({
 
   fieldLabel: {
     fontSize: FontSize.sm,
-    fontWeight:
-      FontWeight.semibold,
-    color:
-      Colors.neutral[700],
-    marginBottom:
-      Spacing.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.neutral[700],
+    marginBottom: Spacing.sm,
   },
 
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom:
-      Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  uploadButton: {
+    borderColor: Colors.primary[500],
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.xs,
+    alignSelf: 'flex-start',
+    // width: scale(110),
+  },
+  uploadPdfTxt: {
+    color: Colors.primary[500],
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+  },
+  selectedPdfContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    padding: Spacing.sm,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.success[50],
+    gap: Spacing.sm,
+  },
+
+  pdfInfo: {
+    flex: 1,
+  },
+
+  pdfName: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.neutral[800],
+  },
+
+  pdfSize: {
+    fontSize: FontSize.xs,
+    color: Colors.neutral[500],
+    marginTop: 2,
   },
 });

@@ -1,8 +1,15 @@
+import NursingButton from '../../../../components/nursing/NursingButton';
+import { Fontconstants } from '../../../../constants/fontConstants';
+import { fontScale } from '../../../../utils/scale';
 import {
   NurseHeader,
   UrgentAlert,
 } from '../../../../components/nursing/NurseDashboardHeader';
 import React, { useMemo, useState } from 'react';
+import {
+  getNursingVitalStatus,
+  VitalKind,
+} from '../../../../utils/nursingVitalStatus';
 import {
   ScrollView,
   StyleSheet,
@@ -29,6 +36,7 @@ import {
   Spacing,
 } from '../../../../constants/theme';
 import { useApp } from '../../../../context/AppContext';
+import MedicalRecordsModal from '../../../../components/nursing/MedicalRecordsModal';
 
 type Patient = {
   bed: string;
@@ -106,6 +114,7 @@ const NursePatients = () => {
   const insets = useSafeAreaInsets();
   const { notifications, showToast } = useApp();
   const [search, setSearch] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [filter, setFilter] = useState<'all' | 'critical' | 'isolation'>('all');
   const patients = useMemo(
     () =>
@@ -149,17 +158,15 @@ const NursePatients = () => {
                   Continuous Real-Time Telemetry & Electronic Medical Records
                 </Text>
               </View>
-              <TouchableOpacity
-                style={styles.syncButton}
+              <NursingButton
+                title="Sync Monitors"
+                variant="outline"
+                icon={<RefreshCw size={16} color={Colors.primary[600]} />}
+                style={styles.syncAction}
                 onPress={() =>
                   showToast('Live monitors synchronised.', 'success')
                 }
-              >
-                <RefreshCw size={14} color={Colors.teal[700]} />
-                <Text numberOfLines={1} style={styles.syncText}>
-                  Sync Monitors
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
             <View style={styles.rule} />
             <View style={styles.filters}>
@@ -186,7 +193,7 @@ const NursePatients = () => {
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Search bed, patient name, MRN, diagnosis..."
+                placeholder="Search bed, patient name diagnosis..."
                 placeholderTextColor={Colors.neutral[400]}
                 style={styles.searchInput}
               />
@@ -196,9 +203,7 @@ const NursePatients = () => {
             <PatientCard
               key={patient.bed}
               patient={patient}
-              onRecords={() =>
-                showToast(`${patient.name}'s medical records opened.`, 'info')
-              }
+              onRecords={() => setSelectedPatient(patient)}
               onEmar={() => navigation.navigate('NurseEmar')}
             />
           ))}
@@ -213,6 +218,16 @@ const NursePatients = () => {
           )}
         </View>
       </ScrollView>
+      {selectedPatient && (
+        <MedicalRecordsModal
+          patient={selectedPatient}
+          onClose={() => setSelectedPatient(null)}
+          onEmar={() => {
+            setSelectedPatient(null);
+            navigation.navigate('NurseEmar');
+          }}
+        />
+      )}
     </View>
   );
 };
@@ -263,6 +278,7 @@ function PatientCard({
 }) {
   const critical = patient.status === 'Critical Telemetry';
   const borderline = patient.status === 'Borderline';
+  const vitalKinds: VitalKind[] = ['hr', 'bp', 'spo2', 'rr', 'temperature'];
   const measurements = [
     ['♡ HR', patient.vitals[0], 'bpm'],
     ['◌ BP', patient.vitals[1], 'mmHg'],
@@ -312,10 +328,12 @@ function PatientCard({
         </View>
       </View>
       <View style={styles.vitalsTitle}>
-        <HeartPulse size={15} color={Colors.teal[600]} />
-        <Text style={styles.vitalsTitleText}>
-          Real-Time Vital Signs ({patient.rhythm})
-        </Text>
+        <HeartPulse size={15} color={Colors.primary[600]} />
+        <View style={styles.vitalsTitleContent}>
+          <Text style={styles.vitalsTitleText}>
+            Real-Time Vital Signs ({patient.rhythm})
+          </Text>
+        </View>
         <Text style={styles.updated}>◷ Updated {patient.updated}</Text>
       </View>
       <View style={styles.vitals}>
@@ -324,8 +342,9 @@ function PatientCard({
             key={measurement[0]}
             style={[
               styles.vital,
-              critical && index < 4 && styles.vitalCritical,
-              critical && (index === 1 || index === 3) && styles.vitalWarning,
+              vitalStatusStyles[
+                getNursingVitalStatus(vitalKinds[index], measurement[1])
+              ],
             ]}
           >
             <Text style={styles.vitalLabel}>{measurement[0]}</Text>
@@ -344,13 +363,18 @@ function PatientCard({
         )}
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.recordsButton} onPress={onRecords}>
-          <FileText size={15} color={Colors.neutral[500]} />
-          <Text style={styles.recordsText}>Medical Records</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.emarButton} onPress={onEmar}>
-          <Text style={styles.emarText}>⌕ View Mobile eMAR</Text>
-        </TouchableOpacity>
+        <NursingButton
+          title="Medical Records"
+          variant="outline"
+          icon={<FileText size={16} color={Colors.primary[600]} />}
+          style={styles.patientAction}
+          onPress={onRecords}
+        />
+        <NursingButton
+          title="View Mobile eMAR"
+          style={styles.patientAction}
+          onPress={onEmar}
+        />
       </View>
     </View>
   );
@@ -359,7 +383,9 @@ function PatientCard({
 export default NursePatients;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#edf2f7' },
+  syncAction: { alignSelf: 'flex-end', marginTop: Spacing.sm },
+  patientAction: { flexGrow: 1, flexBasis: 145 },
+  container: { flex: 1, backgroundColor: Colors.neutral[50] },
   content: { paddingBottom: Spacing.xl },
   body: {
     padding: Spacing.base,
@@ -370,7 +396,7 @@ const styles = StyleSheet.create({
   dashboardCard: {
     backgroundColor: Colors.neutral[0],
     padding: Spacing.md,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.neutral[200],
     marginBottom: Spacing.md,
@@ -385,23 +411,30 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   sectionTitle: {
-    fontSize: FontSize.base,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(FontSize.base),
     color: Colors.neutral[900],
     fontWeight: FontWeight.bold,
     flexShrink: 1,
   },
   bedCount: {
-    fontSize: 9,
-    color: Colors.teal[700],
-    backgroundColor: Colors.teal[50],
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(11),
+    color: Colors.primary[700],
+    backgroundColor: Colors.primary[50],
     borderWidth: 1,
-    borderColor: Colors.teal[200],
+    borderColor: Colors.primary[200],
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: Radius.pill,
     fontWeight: FontWeight.bold,
   },
-  sectionSub: { fontSize: 10, color: Colors.neutral[500], marginTop: 3 },
+  sectionSub: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(13),
+    color: Colors.neutral[500],
+    marginTop: 3,
+  },
   syncButton: {
     width: 118,
     height: 32,
@@ -411,14 +444,15 @@ const styles = StyleSheet.create({
     gap: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.teal[50],
+    backgroundColor: Colors.primary[50],
     borderWidth: 1,
-    borderColor: Colors.teal[300],
+    borderColor: Colors.primary[300],
     borderRadius: Radius.pill,
   },
   syncText: {
-    fontSize: 10,
-    color: Colors.teal[700],
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(13),
+    color: Colors.primary[700],
     fontWeight: FontWeight.bold,
   },
   rule: {
@@ -438,9 +472,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: Colors.neutral[50],
   },
-  filterActive: { backgroundColor: Colors.neutral[900] },
+  filterActive: { backgroundColor: Colors.primary[600] },
   filterText: {
-    fontSize: 10,
+    fontFamily: Fontconstants.SEMIBOLD,
+    fontSize: fontScale(13),
     color: Colors.neutral[600],
     fontWeight: FontWeight.semibold,
   },
@@ -461,15 +496,16 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   searchInput: {
+    fontFamily: Fontconstants.REGULAR,
     flex: 1,
-    fontSize: 11,
+    fontSize: fontScale(13),
     color: Colors.neutral[700],
     padding: 0,
   },
   patientCard: {
     backgroundColor: Colors.neutral[0],
     padding: Spacing.md,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.neutral[200],
     marginBottom: Spacing.md,
@@ -487,7 +523,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   bed: {
-    fontSize: 10,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(13),
     fontWeight: FontWeight.bold,
     color: Colors.neutral[0],
     backgroundColor: Colors.neutral[800],
@@ -496,23 +533,35 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xs,
   },
   patientName: {
-    fontSize: FontSize.sm,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(FontSize.sm),
     color: Colors.neutral[900],
     fontWeight: FontWeight.bold,
   },
-  age: { fontSize: 10, color: Colors.neutral[500] },
+  age: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(13),
+    color: Colors.neutral[500],
+  },
   mrn: {
-    fontSize: 8,
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(11),
     color: Colors.primary[700],
     backgroundColor: Colors.primary[50],
     paddingHorizontal: 5,
     paddingVertical: 3,
     borderRadius: Radius.xs,
   },
-  diagnosis: { fontSize: 10, color: Colors.primary[900], marginTop: 5 },
+  diagnosis: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(13),
+    color: Colors.primary[900],
+    marginTop: 5,
+  },
   rightFlags: { alignItems: 'flex-end', gap: 6 },
   status: {
-    fontSize: 9,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(11),
     fontWeight: FontWeight.bold,
     paddingHorizontal: 7,
     paddingVertical: 5,
@@ -532,7 +581,8 @@ const styles = StyleSheet.create({
   },
   codeRow: { flexDirection: 'row', gap: 4 },
   code: {
-    fontSize: 8,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(11),
     color: Colors.primary[700],
     backgroundColor: Colors.primary[50],
     borderWidth: 1,
@@ -557,8 +607,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  vitalsTitleText: { fontSize: 10, color: Colors.neutral[700] },
-  updated: { marginLeft: 'auto', fontSize: 9, color: Colors.neutral[400] },
+  vitalsTitleContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  vitalsTitleText: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(13),
+    color: Colors.neutral[700],
+  },
+  updated: {
+    fontFamily: Fontconstants.REGULAR,
+    flexShrink: 0,
+    maxWidth: '45%',
+    textAlign: 'right',
+    fontSize: fontScale(11),
+    color: Colors.neutral[400],
+  },
   vitals: { flexDirection: 'row', gap: 7, marginTop: Spacing.sm },
   vital: {
     flex: 1,
@@ -571,21 +636,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   vitalCritical: {
-    backgroundColor: Colors.error[50],
+    backgroundColor: Colors.error[100],
     borderColor: Colors.error[200],
   },
   vitalWarning: {
-    backgroundColor: Colors.warning[50],
+    backgroundColor: Colors.warning[100],
     borderColor: Colors.warning[300],
   },
-  vitalLabel: { fontSize: 9, color: Colors.primary[600] },
+  vitalNormal: {
+    backgroundColor: Colors.success[100],
+    borderColor: Colors.success[200],
+  },
+  vitalLabel: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(11),
+    color: Colors.primary[600],
+  },
   vitalValue: {
-    fontSize: FontSize.sm,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(FontSize.sm),
     color: Colors.neutral[900],
     fontWeight: FontWeight.bold,
     marginTop: 3,
   },
-  vitalUnit: { fontSize: 8, color: Colors.neutral[400], marginTop: 3 },
+  vitalUnit: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(11),
+    color: Colors.neutral[400],
+    marginTop: 3,
+  },
   allergyRow: {
     marginTop: Spacing.sm,
     paddingTop: Spacing.sm,
@@ -595,10 +674,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  allergy: { fontSize: 9, color: Colors.error[600], flex: 1 },
+  allergy: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(11),
+    color: Colors.error[600],
+    flex: 1,
+  },
   allergyValue: { color: Colors.neutral[700] },
   precaution: {
-    fontSize: 9,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(11),
     fontWeight: FontWeight.bold,
     color: '#7e22ce',
     backgroundColor: '#f3e8ff',
@@ -620,40 +705,51 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   recordsText: {
-    fontSize: 10,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(13),
     color: Colors.neutral[600],
     fontWeight: FontWeight.bold,
   },
   emarButton: {
     flex: 1,
     minHeight: 35,
-    backgroundColor: Colors.teal[600],
+    backgroundColor: Colors.primary[600],
     borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emarText: {
-    fontSize: 10,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(13),
     color: Colors.neutral[0],
     fontWeight: FontWeight.bold,
   },
   empty: {
     padding: Spacing.xl,
     alignItems: 'center',
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     backgroundColor: Colors.neutral[0],
     borderWidth: 1,
     borderColor: Colors.neutral[200],
   },
   emptyTitle: {
-    fontSize: FontSize.base,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(FontSize.base),
     color: Colors.neutral[800],
     fontWeight: FontWeight.bold,
     marginTop: Spacing.sm,
   },
   emptyText: {
-    fontSize: FontSize.sm,
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(FontSize.sm),
     color: Colors.neutral[500],
     marginTop: 3,
   },
 });
+
+const vitalStatusStyles = {
+  normal: styles.vitalNormal,
+  moderate: styles.vitalWarning,
+  high: styles.vitalCritical,
+  unknown: undefined,
+};

@@ -1,4 +1,7 @@
-﻿import React, { useMemo, useState } from 'react';
+import NursingButton from '../../../../components/nursing/NursingButton';
+import { Fontconstants } from '../../../../constants/fontConstants';
+import { fontScale } from '../../../../utils/scale';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -179,14 +182,14 @@ const statusColors: Record<TimelineFilter, string> = {
   all: Colors.neutral[900],
   overdue: Colors.error[600],
   due: Colors.warning[600],
-  upcoming: Colors.teal[700],
+  upcoming: Colors.primary[700],
   given: Colors.success[700],
 };
 const statusBackgrounds: Record<TimelineFilter, string> = {
   all: Colors.neutral[100],
   overdue: Colors.error[50],
   due: Colors.warning[50],
-  upcoming: Colors.teal[50],
+  upcoming: Colors.primary[50],
   given: Colors.success[50],
 };
 
@@ -266,19 +269,18 @@ const NurseEmar = () => {
                   Floor Tasks
                 </Text>
               </View>
-              <TouchableOpacity
-                accessibilityRole="button"
-                style={styles.testButton}
+              <NursingButton
+                title="Test Urgent Alert"
+                variant="outline"
+                icon={<Volume2 size={16} color={Colors.primary[600]} />}
+                style={styles.testAction}
                 onPress={() =>
                   showToast(
                     'Test urgent alert: Lasix IV Push is due for Eleanor Zhang, Bed 404-B.',
                     'info',
                   )
                 }
-              >
-                <Volume2 size={14} color={Colors.error[600]} />
-                <Text style={styles.testText}>Test Urgent Alert</Text>
-              </TouchableOpacity>
+              />
             </View>
             <View style={styles.safetyBanner}>
               <ShieldAlert size={16} color={Colors.error[600]} />
@@ -361,16 +363,15 @@ const NurseEmar = () => {
               <Text style={styles.sectionSub}>
                 Try changing the search term or filter.
               </Text>
-              <TouchableOpacity
-                accessibilityRole="button"
-                style={styles.resetButton}
+              <NursingButton
+                title="Reset filters"
+                variant="outline"
+                style={styles.resetAction}
                 onPress={() => {
                   setSearch('');
                   setFilter('all');
                 }}
-              >
-                <Text style={styles.resetText}>Reset filters</Text>
-              </TouchableOpacity>
+              />
             </View>
           )}
         </View>
@@ -468,30 +469,25 @@ function MedicationCard({ medication }: { medication: Medication }) {
             </View>
           ) : (
             <View style={styles.actions}>
-              <TouchableOpacity
-                accessibilityRole="button"
+              <NursingButton
+                title={
+                  highAlert ? 'Dual-Verify & Administer' : 'Administer Dose'
+                }
+                variant={highAlert ? 'danger' : 'primary'}
+                icon={<Syringe size={16} color={Colors.neutral[0]} />}
+                style={styles.doseAction}
+                onPress={() => openDosePreview(medication)}
                 accessibilityLabel={`${
                   highAlert ? 'Dual-verify and administer' : 'Administer'
                 } ${medication.name} for ${medication.patient}`}
-                style={[
-                  styles.administerButton,
-                  highAlert && styles.dualVerifyButton,
-                ]}
-                onPress={() => openDosePreview(medication)}
-              >
-                <Syringe size={15} color={Colors.neutral[0]} />
-                <Text style={styles.administerText}>
-                  {highAlert ? 'Dual-Verify & Administer' : 'Administer Dose'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={`Hold or omit ${medication.name} for ${medication.patient}`}
-                style={styles.holdButton}
+              />
+              <NursingButton
+                title="Hold / Omit"
+                variant="outline"
+                style={styles.doseAction}
                 onPress={() => openDosePreview(medication, true)}
-              >
-                <Text style={styles.holdText}>Hold / Omit</Text>
-              </TouchableOpacity>
+                accessibilityLabel={`Hold or omit ${medication.name} for ${medication.patient}`}
+              />
             </View>
           )}
         </View>
@@ -502,7 +498,10 @@ function MedicationCard({ medication }: { medication: Medication }) {
 export default NurseEmar;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#edf2f7' },
+  testAction: { alignSelf: 'flex-end', marginLeft: 'auto' },
+  resetAction: { marginTop: Spacing.md },
+  doseAction: { flexGrow: 1, flexBasis: 180 },
+  container: { flex: 1, backgroundColor: Colors.neutral[50] },
   content: { paddingBottom: Spacing.xl },
   body: {
     padding: Spacing.base,
@@ -513,7 +512,7 @@ const styles = StyleSheet.create({
   dashboardCard: {
     backgroundColor: Colors.neutral[0],
     padding: Spacing.md,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.neutral[200],
     marginBottom: Spacing.base,
@@ -533,45 +532,31 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   sectionTitle: {
-    fontSize: FontSize.base,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(FontSize.lg),
     color: Colors.neutral[900],
     fontWeight: FontWeight.bold,
   },
   unitBadge: {
-    fontSize: 9,
-    color: Colors.teal[700],
-    backgroundColor: Colors.teal[50],
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(11),
+    color: Colors.primary[700],
+    backgroundColor: Colors.primary[50],
     borderWidth: 1,
-    borderColor: Colors.teal[200],
+    borderColor: Colors.primary[200],
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: Radius.pill,
     fontWeight: FontWeight.bold,
   },
   sectionSub: {
-    fontSize: 10,
-    lineHeight: 15,
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(13),
+    lineHeight: fontScale(19),
     color: Colors.neutral[500],
     marginTop: 3,
   },
-  testButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    minHeight: 34,
-    paddingHorizontal: Spacing.sm,
-    marginLeft: 'auto',
-    borderWidth: 1,
-    borderColor: Colors.error[200],
-    backgroundColor: Colors.error[50],
-    borderRadius: Radius.md,
-  },
-  testText: {
-    fontSize: 10,
-    fontWeight: FontWeight.semibold,
-    color: Colors.error[600],
-  },
+
   safetyBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -584,14 +569,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
   },
   safetyText: {
+    fontFamily: Fontconstants.SEMIBOLD,
     flex: 1,
-    fontSize: 10,
-    lineHeight: 15,
+    fontSize: fontScale(13),
+    lineHeight: fontScale(19),
     color: Colors.error[600],
     fontWeight: FontWeight.semibold,
   },
   safetyBadge: {
-    fontSize: 8,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(11),
     fontWeight: FontWeight.bold,
     color: Colors.error[700],
     backgroundColor: Colors.error[100],
@@ -615,11 +602,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 7,
   },
-  filterActive: { backgroundColor: Colors.neutral[900] },
-  filterText: { fontSize: 10, fontWeight: FontWeight.semibold },
+  filterActive: { backgroundColor: Colors.primary[600] },
+  filterText: {
+    fontFamily: Fontconstants.SEMIBOLD,
+    fontSize: fontScale(13),
+    fontWeight: FontWeight.semibold,
+  },
   filterActiveText: { color: Colors.neutral[0] },
   searchBox: {
-    minHeight: 39,
+    minHeight: 48,
     backgroundColor: Colors.neutral[50],
     borderWidth: 1,
     borderColor: Colors.neutral[200],
@@ -630,8 +621,9 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   searchInput: {
+    fontFamily: Fontconstants.REGULAR,
     flex: 1,
-    fontSize: 11,
+    fontSize: fontScale(FontSize.base),
     color: Colors.neutral[700],
     paddingVertical: Spacing.sm,
   },
@@ -657,7 +649,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.neutral[200],
     backgroundColor: Colors.neutral[0],
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     overflow: 'hidden',
     ...Shadows.sm,
   },
@@ -688,7 +680,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   bed: {
-    fontSize: 10,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(13),
     fontWeight: FontWeight.bold,
     color: Colors.neutral[0],
     backgroundColor: Colors.neutral[800],
@@ -697,7 +690,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xs,
   },
   patientName: {
-    fontSize: 11,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(13),
     fontWeight: FontWeight.bold,
     color: Colors.neutral[800],
   },
@@ -719,12 +713,14 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xs,
   },
   highAlertText: {
-    fontSize: 8,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(11),
     fontWeight: FontWeight.bold,
     color: Colors.error[600],
   },
   statusBadge: {
-    fontSize: 8,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(11),
     fontWeight: FontWeight.bold,
     paddingHorizontal: 7,
     paddingVertical: 4,
@@ -734,7 +730,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.error[600],
     color: Colors.neutral[0],
   },
-  dueBadge: { backgroundColor: Colors.warning[500], color: Colors.neutral[0] },
+  dueBadge: {
+    backgroundColor: Colors.warning[500],
+    color: Colors.warning[900],
+  },
   upcomingBadge: {
     backgroundColor: Colors.neutral[100],
     color: Colors.neutral[600],
@@ -752,30 +751,38 @@ const styles = StyleSheet.create({
   },
   medicationTitleContent: { flexGrow: 1, flexBasis: 180 },
   medicationName: {
-    fontSize: FontSize.sm,
-    lineHeight: 18,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(FontSize.base),
+    lineHeight: fontScale(22),
     fontWeight: FontWeight.bold,
     color: Colors.neutral[900],
   },
   generic: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(13),
+    lineHeight: fontScale(19),
     color: Colors.neutral[500],
     marginTop: 2,
   },
   doseColumn: { alignItems: 'flex-end', marginLeft: 'auto', maxWidth: '100%' },
   dose: {
-    fontSize: 10,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(13),
     fontWeight: FontWeight.bold,
-    color: Colors.teal[700],
-    backgroundColor: Colors.teal[50],
+    color: Colors.primary[700],
+    backgroundColor: Colors.primary[50],
     borderWidth: 1,
-    borderColor: Colors.teal[200],
+    borderColor: Colors.primary[200],
     borderRadius: 3,
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
-  route: { fontSize: 9, color: Colors.neutral[500], marginTop: 3 },
+  route: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(11),
+    color: Colors.neutral[500],
+    marginTop: 3,
+  },
   orderRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -783,8 +790,17 @@ const styles = StyleSheet.create({
     gap: 5,
     marginTop: Spacing.sm,
   },
-  meta: { fontSize: 9, lineHeight: 14, color: Colors.neutral[500] },
-  strong: { color: Colors.neutral[700], fontWeight: FontWeight.semibold },
+  meta: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(11),
+    lineHeight: fontScale(16),
+    color: Colors.neutral[500],
+  },
+  strong: {
+    fontFamily: Fontconstants.SEMIBOLD,
+    color: Colors.neutral[700],
+    fontWeight: FontWeight.semibold,
+  },
   warning: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -796,9 +812,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.error[50],
   },
   warningText: {
+    fontFamily: Fontconstants.REGULAR,
     flex: 1,
-    fontSize: 10,
-    lineHeight: 15,
+    fontSize: fontScale(13),
+    lineHeight: fontScale(19),
     color: Colors.error[600],
   },
   instructions: {
@@ -806,37 +823,19 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
     backgroundColor: Colors.neutral[50],
   },
-  instructionText: { fontSize: 11, lineHeight: 16, color: Colors.neutral[500] },
-  actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  administerButton: {
-    flex: 1,
-    minHeight: 40,
+  instructionText: {
+    fontFamily: Fontconstants.REGULAR,
+    fontSize: fontScale(13),
+    lineHeight: fontScale(19),
+    color: Colors.neutral[500],
+  },
+  actions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.teal[600],
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    flexWrap: 'wrap',
   },
-  dualVerifyButton: { backgroundColor: Colors.error[600] },
-  administerText: {
-    flexShrink: 1,
-    textAlign: 'center',
-    fontSize: 11,
-    fontWeight: FontWeight.bold,
-    color: Colors.neutral[0],
-  },
-  holdButton: {
-    minHeight: 40,
-    paddingHorizontal: Spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.neutral[300],
-    borderRadius: Radius.md,
-  },
-  holdText: { fontSize: 11, color: Colors.neutral[700] },
+
   signed: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -848,30 +847,26 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   signedText: {
+    fontFamily: Fontconstants.SEMIBOLD,
     flex: 1,
-    fontSize: 10,
-    lineHeight: 15,
+    fontSize: fontScale(13),
+    lineHeight: fontScale(19),
     fontWeight: FontWeight.semibold,
-    color: Colors.teal[700],
+    color: Colors.success[700],
   },
   empty: {
     padding: Spacing.xl,
     alignItems: 'center',
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     backgroundColor: Colors.neutral[0],
     borderWidth: 1,
     borderColor: Colors.neutral[200],
   },
   emptyTitle: {
-    fontSize: FontSize.base,
+    fontFamily: Fontconstants.BOLD,
+    fontSize: fontScale(FontSize.base),
     color: Colors.neutral[800],
     fontWeight: FontWeight.bold,
     marginTop: Spacing.sm,
-  },
-  resetButton: { marginTop: Spacing.md, padding: Spacing.sm },
-  resetText: {
-    fontSize: FontSize.sm,
-    color: Colors.teal[700],
-    fontWeight: FontWeight.semibold,
   },
 });
