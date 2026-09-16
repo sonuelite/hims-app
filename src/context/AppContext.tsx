@@ -27,7 +27,7 @@ import type {
   Document,
   IPDAdmission,
 } from '../types';
-
+import Toast from 'react-native-toast-message';
 // import * as mock from '../data/mockData';
 import * as mock from '../data/mockData';
 
@@ -235,22 +235,37 @@ export function AppProvider({
   // Toast
   // -------------------------
 
-  const showToast = useCallback(
-    (
-      message: string,
-      type: 'success' | 'error' | 'info' = 'success'
-    ) => {
-      setToast({
-        message,
-        type,
-      });
+  // const showToast = useCallback(
+  //   (
+  //     message: string,
+  //     type: 'success' | 'error' | 'info' = 'success'
+  //   ) => {
+  //     setToast({
+  //       message,
+  //       type,
+  //     });
 
-      setTimeout(() => {
-        setToast(null);
-      }, 3000);
-    },
-    []
-  );
+  //     setTimeout(() => {
+  //       setToast(null);
+  //     }, 3000);
+  //   },
+  //   []
+  // );
+  const showToast = useCallback(
+  (
+    message: string,
+    type: 'success' | 'error' | 'info' = 'success',
+  ) => {
+    Toast.show({
+      type,
+      text1: message,
+      position: 'top',
+      visibilityTime: 3000,
+      autoHide: true,
+    });
+  },
+  [],
+);
 
   const clearToast = useCallback(() => {
     setToast(null);

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { store } from '../store/store';
 
 export const apiUrl = 'https://hims-api.zynotechnologies.com';
 
@@ -11,11 +11,13 @@ const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use(
-  async config => {
-    const token = await AsyncStorage.getItem('accessToken');
+  config => {
+    const token = store.getState().auth.accessToken;
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      config.headers.delete('Authorization');
     }
 
     config.headers['x-entity-id'] = '1';

@@ -36,7 +36,20 @@ import {
 import { useApp } from '../../../context/AppContext';
 import type { Patient } from '../../../types';
 
-import { createPatient, getAllActiveCountry } from '../../../network/api';
+import {
+  createPatient,
+  getAllActiveCountry,
+  getStatesByCountryId,
+  getCitiesByStateId,
+} from '../../../network/api';
+import {
+  normalizePatientStates,
+  PatientStateOption,
+} from '../../../utils/patientStateOptions';
+import {
+  normalizePatientCities,
+  PatientCityOption,
+} from '../../../utils/patientCityOptions';
 
 import CustomButton from '../../../components/customButton/CustomButton';
 import { scale } from '../../../utils/scale';
@@ -44,8 +57,6 @@ import { Fontconstants } from '../../../constants/fontConstants';
 import { ColorConstants } from '../../../constants/colorConstants';
 import CustomDropdown from '../../../components/customDropdown/CustomDropdown';
 
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../../store/store';
 import { pick, types, isCancel } from '@react-native-documents/picker';
 
 type RootStackParamList = {
@@ -79,13 +90,6 @@ export default function PatientOnboardingScreen() {
 
   const { showToast } = useApp();
 
-  /*
-   * Get access token from Redux
-   */
-  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
-
-  console.log('accessTokenFromRedux-->', accessToken);
-
   const [mode, setMode] = useState<'manual' | 'abha'>('manual');
 
   const [abhaNumber, setAbhaNumber] = useState('');
@@ -106,7 +110,17 @@ export default function PatientOnboardingScreen() {
 
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
+  const [cityId, setCityId] = useState('');
+  const [cities, setCities] = useState<PatientCityOption[]>([]);
+  const [cityLoading, setCityLoading] = useState(false);
+  const [cityError, setCityError] = useState('');
+  const [cityRetry, setCityRetry] = useState(0);
   const [state, setState] = useState('');
+  const [stateId, setStateId] = useState('');
+  const [states, setStates] = useState<PatientStateOption[]>([]);
+  const [stateLoading, setStateLoading] = useState(false);
+  const [stateError, setStateError] = useState('');
+  const [stateRetry, setStateRetry] = useState(0);
   const [area, setArea] = useState('');
   const [pincode, setPincode] = useState('');
 
@@ -149,89 +163,157 @@ export default function PatientOnboardingScreen() {
     .map(item => item.countryss_name)
     .filter((name): name is string => Boolean(name));
 
+  useEffect(() => {
+    const controller = new AbortController();
+    setStates([]);
+    setState('');
+    setStateId('');
+    setStateError('');
+    setStateLoading(false);
+    if (!countryId) {
+      return () => controller.abort();
+    }
+
+    setStateLoading(true);
+    getStatesByCountryId(countryId, controller.signal)
+      .then(response => {
+        if (!controller.signal.aborted) {
+          setStates(normalizePatientStates(response));
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setStateError('Unable to load states. Please try again.');
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setStateLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [countryId, stateRetry]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setCity('');
+    setCityId('');
+    setCities([]);
+    setCityError('');
+    setCityLoading(false);
+    if (!stateId) {
+      return () => controller.abort();
+    }
+    setCityLoading(true);
+    getCitiesByStateId(stateId, controller.signal)
+      .then(response => {
+        if (!controller.signal.aborted) {
+          setCities(normalizePatientCities(response));
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setCityError('Unable to load cities. Please try again.');
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setCityLoading(false);
+        }
+      });
+    return () => controller.abort();
+  }, [stateId, countryId, cityRetry]);
+
   /*
    * Calculate patient age
    */
-  const calculateAge = (dobStr: string) => {
-    const parts = dobStr.split('-');
+  // const calculateAge = (dobStr: string) => {
+  //   const parts = dobStr.split('-');
 
-    if (parts.length !== 3) {
-      return 0;
+  //   if (parts.length !== 3) {
+  //     return 0;
+  //   }
+
+  //   const year = parseInt(parts[0], 10);
+  //   const month = parseInt(parts[1], 10);
+  //   const day = parseInt(parts[2], 10);
+
+  //   const birth = new Date(year, month - 1, day);
+
+  //   const diff = Date.now() - birth.getTime();
+
+  //   return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+  // };
+
+  const calculateAge = (dobStr: string) => {
+    if (!dobStr) {
+      return {
+        years: 0,
+        months: 0,
+        days: 0,
+      };
     }
 
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const day = parseInt(parts[2], 10);
+    const [year, month, day] = dobStr.split('-').map(Number);
 
-    const birth = new Date(year, month - 1, day);
+    const birthDate = new Date(year, month - 1, day);
+    const today = new Date();
 
-    const diff = Date.now() - birth.getTime();
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+    let days = today.getDate() - birthDate.getDate();
 
-    return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+    // Borrow days from previous month
+    if (days < 0) {
+      months--;
+
+      const daysInPreviousMonth = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        0,
+      ).getDate();
+
+      days += daysInPreviousMonth;
+    }
+
+    // Borrow months from previous year
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    return {
+      years,
+      months,
+      days,
+    };
   };
-
   /*
    * Load countries
    */
   useEffect(() => {
-    if (!accessToken) {
-      console.log('Access token not available yet');
-      return;
-    }
-
-    loadCountries();
-  }, [accessToken]);
-
-  const loadCountries = async () => {
-    try {
-      console.log('loadCountries try');
-
-      setCountryLoading(true);
-
-      /*
-       * Use access token directly from Redux
-       */
-      console.log('Access token -->', accessToken);
-
-      const response = await getAllActiveCountry(accessToken || '');
-
-      console.log('Country API Response:', response);
-
-      /*
-       * Your API response is:
-       *
-       * {
-       *   code: 200,
-       *   message: "...",
-       *   data: [
-       *     {
-       *       countryss_id: 101,
-       *       countryss_name: "India"
-       *     }
-       *   ]
-       * }
-       */
-
-      const countryList = response?.data || [];
-
-      if (Array.isArray(countryList)) {
-        setCountries(countryList);
-      } else {
-        setCountries([]);
-      }
-    } catch (error: any) {
-      console.log(
-        'Country Load Error:',
-        error?.response?.data || error?.message,
-      );
-
-      setCountries([]);
-
-      showToast('Failed to load countries', 'error');
-    } finally {
-      setCountryLoading(false);
-    }
-  };
+    const controller = new AbortController();
+    setCountryLoading(true);
+    getAllActiveCountry(controller.signal)
+      .then(response => {
+        if (!controller.signal.aborted) {
+          setCountries(Array.isArray(response?.data) ? response.data : []);
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setCountries([]);
+          showToast('Failed to load countries', 'error');
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setCountryLoading(false);
+        }
+      });
+    return () => controller.abort();
+  }, [showToast]);
 
   /*
    * ABHA verification
@@ -275,9 +357,17 @@ export default function PatientOnboardingScreen() {
 
       setAddress(mockData.address || '');
 
-      setCity(mockData.city || '');
+      // City must be selected from the current state's API options.
+      setCity('');
+      setCityId('');
+      setCities([]);
+      setCityRetry(value => value + 1);
 
-      setState(mockData.state || '');
+      const matchedState = states.find(
+        item => item.name.toLowerCase() === mockData.state?.toLowerCase(),
+      );
+      setState(matchedState?.name || '');
+      setStateId(matchedState?.id || '');
 
       showToast('ABHA verified successfully', 'success');
     }, 1500);
@@ -286,7 +376,67 @@ export default function PatientOnboardingScreen() {
   /*
    * Validate patient form
    */
+  // const validate = (): string | null => {
+  //   if (!firstName.trim()) {
+  //     return 'First name is required';
+  //   }
+
+  //   if (!lastName.trim()) {
+  //     return 'Last name is required';
+  //   }
+
+  //   if (!dob.trim()) {
+  //     return 'Date of birth is required';
+  //   }
+
+  //   if (!mobile.trim()) {
+  //     return 'Mobile number is required';
+  //   }
+
+  //   if (!countryId) {
+  //     return 'Country is required';
+  //   }
+
+  //   if (!stateId || !states.some(item => item.id === stateId)) {
+  //     return 'Please select a state for the selected country';
+  //   }
+
+  //   if (!cityId || !cities.some(item => item.id === cityId)) {
+  //     return 'Please select a city for the selected state';
+  //   }
+
+  //   return null;
+  // };
+
+  const validateDob = (dob: string): string | null => {
+    if (!dob.trim()) return 'Date of birth is required';
+
+    // Must be exactly YYYY-MM-DD
+    if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(dob)) {
+      return 'Date of birth must be in YYYY-MM-DD format';
+    }
+
+    const [year, month, day] = dob.split('-').map(Number);
+    const birthDate = new Date(year, month - 1, day);
+
+    // Check invalid dates like 2026-02-31
+    if (
+      birthDate.getFullYear() !== year ||
+      birthDate.getMonth() !== month - 1 ||
+      birthDate.getDate() !== day
+    ) {
+      return 'Please enter a valid date of birth';
+    }
+
+    if (birthDate > new Date()) {
+      return 'Date of birth cannot be in the future';
+    }
+
+    return null;
+  };
+
   const validate = (): string | null => {
+    // Personal Information
     if (!firstName.trim()) {
       return 'First name is required';
     }
@@ -295,16 +445,53 @@ export default function PatientOnboardingScreen() {
       return 'Last name is required';
     }
 
-    if (!dob.trim()) {
-      return 'Date of birth is required';
-    }
+    const dobError = validateDob(dob);
+    if (dobError) return dobError;
 
     if (!mobile.trim()) {
       return 'Mobile number is required';
     }
 
+    // Address
     if (!countryId) {
       return 'Country is required';
+    }
+
+    if (!stateId || !states.some(item => item.id === stateId)) {
+      return 'Please select a state for the selected country';
+    }
+
+    if (!cityId || !cities.some(item => item.id === cityId)) {
+      return 'Please select a city for the selected state';
+    }
+
+    // Contact Details
+    if (!phone.trim()) {
+      return 'Contact phone number is required';
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '');
+
+    if (cleanPhone.length !== 10) {
+      return 'Contact phone number must be 10 digits';
+    }
+
+    // Email is optional, but validate when entered
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailRegex.test(email.trim())) {
+        return 'Please enter a valid email address';
+      }
+    }
+
+    // Billing And Panel Details
+    if (!panelVal) {
+      return 'Please select whether panel is required';
+    }
+
+    if (panelVal === 'Yes' && !selectedPdf) {
+      return 'Panel PDF is required when panel is selected';
     }
 
     return null;
@@ -333,7 +520,8 @@ export default function PatientOnboardingScreen() {
 
         dob,
 
-        age: `${age} years 0 months 0 days`,
+        // age: `${age} years 0 months 0 days`,
+        age: `${age.years} years ${age.months} months ${age.days} days`,
 
         gender,
 
@@ -348,13 +536,9 @@ export default function PatientOnboardingScreen() {
          */
         countryId,
 
-        /*
-         * Keep these until State/City APIs
-         * are connected.
-         */
-        stateId: '38',
+        stateId,
 
-        cityId: '1401',
+        cityId,
 
         typeReference: 'NONE',
 
@@ -362,7 +546,7 @@ export default function PatientOnboardingScreen() {
 
         contacts: [
           {
-            phone: mobile.trim(),
+            phone: phone.trim(),
             email: email.trim(),
             is_primary: true,
           },
@@ -659,6 +843,14 @@ export default function PatientOnboardingScreen() {
                 : 'No countries found'
             }
             onSelect={selectedCountry => {
+              if (selectedCountry !== country) {
+                setState('');
+                setStateId('');
+                setStates([]);
+                setCity('');
+                setCityId('');
+                setCities([]);
+              }
               /*
                * Set country name
                */
@@ -692,19 +884,78 @@ export default function PatientOnboardingScreen() {
             }}
           />
 
-          <Input
-            label="State"
+          <CustomDropdown
+            label="State *"
             value={state}
-            onChangeText={setState}
-            placeholder="State"
+            options={states.map(item => item.name)}
+            disabled={!countryId || stateLoading || states.length === 0}
+            placeholder={
+              !countryId
+                ? 'Select country first'
+                : stateLoading
+                ? 'Loading states...'
+                : stateError
+                ? 'Unable to load states'
+                : states.length === 0
+                ? 'No states found'
+                : 'Select state'
+            }
+            onSelect={selectedName => {
+              const selectedState = states.find(
+                item => item.name === selectedName,
+              );
+              setState(selectedState?.name || '');
+              setStateId(selectedState?.id || '');
+              if (selectedState?.id !== stateId) {
+                setCity('');
+                setCityId('');
+                setCities([]);
+              }
+            }}
           />
+          {!!stateError && (
+            <View>
+              <Text accessibilityRole="alert">{stateError}</Text>
+              <Button
+                label="Retry loading states"
+                onPress={() => setStateRetry(value => value + 1)}
+              />
+            </View>
+          )}
 
-          <Input
-            label="City"
+          <CustomDropdown
+            label="City *"
             value={city}
-            onChangeText={setCity}
-            placeholder="City"
+            options={cities.map(item => item.name)}
+            disabled={!stateId || cityLoading || cities.length === 0}
+            placeholder={
+              !stateId
+                ? 'Select state first'
+                : cityLoading
+                ? 'Loading cities...'
+                : cityError
+                ? 'Unable to load cities'
+                : cities.length === 0
+                ? 'No cities found'
+                : 'Select city'
+            }
+            onSelect={selectedName => {
+              const selectedCity = cities.find(
+                item => item.name === selectedName,
+              );
+              setCity(selectedCity?.name || '');
+              setCityId(selectedCity?.id || '');
+            }}
           />
+          {!!cityError && (
+            <View>
+              <Text accessibilityRole="alert">{cityError}</Text>
+              <Button
+                label="Retry loading cities"
+                onPress={() => setCityRetry(value => value + 1)}
+              />
+            </View>
+          )}
 
           <Input
             label="Area"
@@ -727,11 +978,24 @@ export default function PatientOnboardingScreen() {
         <Text style={styles.sectionTitle}>Contact Details</Text>
 
         <Card style={styles.formCard}>
-          <Input
+          {/* <Input
             label="Phone *"
             value={phone}
             onChangeText={setPhone}
             placeholder="+91 XXXXX XXXXX"
+            keyboardType="phone-pad"
+          /> */}
+          <Input
+            label="Phone *"
+            value={phone}
+            onChangeText={text => {
+              const numericValue = text.replace(/[^0-9]/g, '');
+
+              if (numericValue.length <= 10) {
+                setPhone(numericValue);
+              }
+            }}
+            placeholder="Enter 10-digit phone number"
             keyboardType="phone-pad"
           />
 
