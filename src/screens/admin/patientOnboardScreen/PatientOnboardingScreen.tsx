@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -34,9 +34,13 @@ import {
 } from 'lucide-react-native';
 
 import { useApp } from '../../../context/AppContext';
-import type { Patient } from '../../../types';
+import {
+  AbhaProfile,
+  parseAbhaProfiles,
+} from '../../../utils/patientAbhaProfiles';
 
 import {
+  searchPatientProfile,
   createPatient,
   getAllActiveCountry,
   getStatesByCountryId,
@@ -92,11 +96,13 @@ export default function PatientOnboardingScreen() {
 
   const [mode, setMode] = useState<'manual' | 'abha'>('manual');
 
-  const [abhaNumber, setAbhaNumber] = useState('');
+  const [abhaMobile, setAbhaMobile] = useState('');
+  const abhaRequest = useRef<AbortController | null>(null);
+  const [abhaProfiles, setAbhaProfiles] = useState<AbhaProfile[]>([]);
+  const [selectedAbha, setSelectedAbha] = useState<AbhaProfile | null>(null);
+  useEffect(() => () => abhaRequest.current?.abort(), []);
   const [abhaVerifying, setAbhaVerifying] = useState(false);
   const [abhaVerified, setAbhaVerified] = useState(false);
-
-  const [abhaData, setAbhaData] = useState<Partial<Patient> | null>(null);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -106,7 +112,6 @@ export default function PatientOnboardingScreen() {
 
   const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
-  const [bloodGroup, setBloodGroup] = useState('O+');
 
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -318,59 +323,65 @@ export default function PatientOnboardingScreen() {
   /*
    * ABHA verification
    */
-  const verifyAbha = () => {
-    if (abhaNumber.length < 14) {
-      showToast('ABHA number must be 14 digits', 'error');
-
+  const applyAbhaProfile = (profile: AbhaProfile) => {
+    setFirstName(profile.firstName);
+    setLastName(profile.lastName);
+    if (profile.gender) {
+      setGender(profile.gender);
+    }
+    setSelectedAbha(profile);
+    setAbhaVerified(profile.verified);
+    showToast(
+      profile.verified
+        ? 'ABHA profile verified. Patient details filled.'
+        : 'Patient details filled. This profile is not KYC verified.',
+      profile.verified ? 'success' : 'info',
+    );
+  };
+  const verifyAbha = async () => {
+    if (abhaRequest.current) {
       return;
     }
-
+    if (!/^[0-9]{10}$/.test(abhaMobile)) {
+      showToast('Enter a valid 10-digit mobile number', 'error');
+      return;
+    }
+    const controller = new AbortController();
+    abhaRequest.current = controller;
     setAbhaVerifying(true);
-
-    setTimeout(() => {
-      setAbhaVerifying(false);
-      setAbhaVerified(true);
-
-      const mockData: Partial<Patient> = {
-        name: 'Aditya Verma',
-        dob: '1990-05-12',
-        gender: 'Male',
-        mobile: '+91 98765 12345',
-        email: 'aditya.verma@abdm.gov.in',
-        bloodGroup: 'B+',
-        address: 'No. 45, Brigade Road',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-      };
-
-      setAbhaData(mockData);
-
-      setDob(mockData.dob || '');
-
-      setGender(mockData.gender || 'Male');
-
-      setMobile(mockData.mobile || '');
-
-      setEmail(mockData.email || '');
-
-      setBloodGroup(mockData.bloodGroup || 'O+');
-
-      setAddress(mockData.address || '');
-
-      // City must be selected from the current state's API options.
-      setCity('');
-      setCityId('');
-      setCities([]);
-      setCityRetry(value => value + 1);
-
-      const matchedState = states.find(
-        item => item.name.toLowerCase() === mockData.state?.toLowerCase(),
+    setAbhaVerified(false);
+    setSelectedAbha(null);
+    setAbhaProfiles([]);
+    try {
+      const response = await searchPatientProfile(
+        { mobile: abhaMobile },
+        controller.signal,
       );
-      setState(matchedState?.name || '');
-      setStateId(matchedState?.id || '');
-
-      showToast('ABHA verified successfully', 'success');
-    }, 1500);
+      if (controller.signal.aborted) {
+        return;
+      }
+      const profiles = parseAbhaProfiles(response);
+      setAbhaProfiles(profiles);
+      if (profiles.length === 1) {
+        applyAbhaProfile(profiles[0]);
+      } else {
+        showToast(
+          profiles.length
+            ? 'Select a patient profile to fill the form.'
+            : 'No ABHA profiles found for this mobile number.',
+          'info',
+        );
+      }
+    } catch {
+      if (!controller.signal.aborted) {
+        showToast('Unable to fetch ABHA profiles. Please try again.', 'error');
+      }
+    } finally {
+      if (abhaRequest.current === controller) {
+        abhaRequest.current = null;
+        setAbhaVerifying(false);
+      }
+    }
   };
 
   /*
@@ -716,24 +727,56 @@ export default function PatientOnboardingScreen() {
                 </Text>
 
                 <Text style={styles.abhaSub}>
-                  Enter the 14-digit ABHA number to auto-fill patient details
+                  Enter the linked mobile number to find and auto-fill an ABHA
+                  profile
                 </Text>
               </View>
             </View>
 
             <Input
-              label="ABHA Number"
-              value={abhaNumber}
+              label="ABHA-linked Mobile Number"
+              value={abhaMobile}
               onChangeText={text => {
-                setAbhaNumber(text.replace(/[^0-9]/g, ''));
+                abhaRequest.current?.abort();
+                abhaRequest.current = null;
+                setAbhaVerifying(false);
+                setAbhaMobile(text.replace(/[^0-9]/g, '').slice(0, 10));
+                setAbhaProfiles([]);
+                setSelectedAbha(null);
 
                 setAbhaVerified(false);
               }}
-              placeholder="Enter 14-digit ABHA number"
+              placeholder="Enter 10-digit mobile number"
               keyboardType="numeric"
               icon={<ScanLine size={20} color={Colors.neutral[400]} />}
             />
 
+            {abhaProfiles.length > 1 &&
+              abhaProfiles.map(profile => (
+                <TouchableOpacity
+                  key={profile.index}
+                  accessibilityRole="radio"
+                  accessibilityState={{
+                    checked: selectedAbha?.index === profile.index,
+                  }}
+                  onPress={() => applyAbhaProfile(profile)}
+                  style={styles.verifiedBox}
+                >
+                  <Text style={styles.verifiedText}>
+                    {selectedAbha?.index === profile.index ? 'Selected: ' : ''}
+                    {profile.firstName} {profile.lastName} ?{' '}
+                    {profile.abhaNumber}
+                    {profile.verified
+                      ? ' ? KYC verified'
+                      : ' ? KYC not verified'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            {selectedAbha && (
+              <Text style={styles.abhaSub}>
+                ABHA: {selectedAbha.abhaNumber}
+              </Text>
+            )}
             {abhaVerified && (
               <View style={styles.verifiedBox}>
                 <CheckCircle size={18} color={Colors.success[600]} />
@@ -748,7 +791,7 @@ export default function PatientOnboardingScreen() {
               label={abhaVerifying ? 'Verifying...' : 'Verify ABHA'}
               onPress={verifyAbha}
               loading={abhaVerifying}
-              disabled={abhaVerified}
+              disabled={abhaVerifying || abhaVerified}
               variant={abhaVerified ? 'success' : 'primary'}
               fullWidth
               icon={

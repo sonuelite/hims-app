@@ -16,6 +16,7 @@ import PharmacyIPD from '../screens/admin/pharmacyIPD/PharmacyIPD';
 import Inventory from '../screens/admin/inventory/Inventory';
 import Hr from '../screens/admin/hr/Hr';
 import NurseTabNavigator from './bottomTabs/NurseTabNavigator';
+import OPDRegistration from '../screens/admin/patients/opdRegistration/OPDRegistration';
 
 const Stack = createNativeStackNavigator();
 
@@ -55,6 +56,7 @@ const StackNavigator = () => {
                 name="PatientOnboardingScreen"
                 component={PatientOnboardingScreen}
             />
+            <Stack.Screen name='OPDRegistration' component={OPDRegistration} />
             <Stack.Screen
                 name="Nursing"
                 component={Nursing}

@@ -4,6 +4,10 @@ const registrationParams = {
   page_url: '/master/opd-management/patients/registration',
   page_name: 'registration',
 };
+const patientsParams = {
+  page_url: '/master/opd-management/patients',
+  page_name: 'patients',
+};
 export const loginUser = async (data: {
   encryptedEmail: string;
   encryptedPassword: string;
@@ -85,5 +89,56 @@ export const getStatesByCountryId = async (
     '/api/WL/getstatesbycountryid/' + encodeURIComponent(countryId),
     { params: registrationParams, signal },
   );
+  return response.data;
+};
+export const searchPatientProfile = async (
+  data: { mobile: string },
+  signal?: AbortSignal,
+) => {
+  const response = await axiosInstance.post('/api/v1/profile_search', data, {
+    params: registrationParams,
+    signal,
+  });
+
+  return response.data;
+};
+
+export const getAllPatients = async (signal?: AbortSignal) => {
+  const response = await axiosInstance.get('/api/v1/getAllPatients', {
+    params: patientsParams,
+    signal,
+  });
+
+  return response.data;
+};
+
+export const getAllDoctors = async (
+  entityId: string | number,
+  departmentId: string | number,
+  signal?: AbortSignal,
+) => {
+  const response = await axiosInstance.get('/api/v1/getAllDoctors', {
+    params: {
+      ...opdQueueParams,
+      entity_id: entityId,
+      dept_id: departmentId,
+    },
+    signal,
+  });
+  return response.data;
+};
+
+const opdQueueParams = {
+  page_url: '/master/opd-management/patients/opd-queue',
+  page_name: 'opd-queue',
+};
+export const getAllDepartments = async (
+  entityId: string | number,
+  signal?: AbortSignal,
+) => {
+  const response = await axiosInstance.get('/api/v1/getAllDepartment_all', {
+    params: { ...opdQueueParams, entity_id: entityId },
+    signal,
+  });
   return response.data;
 };
